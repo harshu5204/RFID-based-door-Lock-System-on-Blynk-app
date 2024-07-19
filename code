@@ -1,0 +1,119 @@
+code:-
+
+#define BLYNK_TEMPLATE_ID "TMPL3t_OaQfv3" 
+#define BLYNK_TEMPLATE_NAME "esd project" 
+#define BLYNK_AUTH_TOKEN "la6-qVkOmtsZYdsrwn7hGarrAyMTPEC" 
+#include <SPI.h> 
+#include <MFRC522.h> 
+#include <ESP8266WiFi.h> 
+#include <BlynkSimpleEsp8266.h> 
+#include <Servo.h> // Include the Servo library 
+#define SS_PIN 4 // sda 
+#define RST_PIN 2 
+#define SERVO_PIN D3 // Servo pin 
+Servo servo; // Create a servo object
+MFRC522 mfrc522(RST_PIN, SS_PIN); 
+char auth[] = "la6-qVkOmtsZYdsrwn-7hGarrAyMTPEC"; 
+//Blynk Authentication Token -- sent via Email from Blynk 
+char ssid[] = "Redmi Note 10 Pro"; //Enter WiFi Name
+char pass[] = "12345678"; //Enter Wifi Password // Create 
+MFRC522 instance. 
+SimpleTimer timer;
+int fflag = 0;
+int eflag = 0;
+int jflag = 0;
+void setup() { 
+ Serial.begin(9600);
+ Blynk.begin(auth, ssid, pass);
+ servo.attach(SERVO_PIN); // Attach the servo to the pin 
+ servo.write(90); // Initially set servo to the middle position
+ SPI.begin(); // Init SPI bus
+ mfrc522.PCD_Init(); // Init MFRC522 card
+ timer.setInterval(1000L, iot_rfid);
+} 
+void loop() { 
+ timer.run(); // Initiates SimpleTimer
+ Blynk.run();
+} 
+void iot_rfid() { 
+ // Prepare key - all keys are set to FFFFFFFFFFFFh at chip 
+delivery from the factory. 
+ MFRC522::MIFARE_Key key;
+ for (byte i = 0; i < 6; i++) {
+ key.keyByte[i] = 0xFF;
+ } 
+ // Look for new cards 
+ if (!mfrc522.PICC_IsNewCardPresent()) { 
+ return;
+ } 
+ // Select one of the cards 
+ if (!mfrc522.PICC_ReadCardSerial()) { 
+ return;
+ } 
+ // Now a card is selected. The UID and SAK is in 
+mfrc522.uid. 
+ // Dump UID 
+ Serial.print("Card UID:");
+ for (byte i = 0; i < mfrc522.uid.size; i++) {
+ Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+ Serial.print(mfrc522.uid.uidByte[i], DEC);
+ } 
+ Serial.println();
+ // Dump PICC type 
+ byte piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
+ if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI 
+&& 
+ piccType != MFRC522::PICC_TYPE_MIFARE_1K && 
+ piccType != MFRC522::PICC_TYPE_MIFARE_4K) { 
+ return;
+ } 
+ 
+ // Enter RFID Tag ID here 
+ if (((mfrc522.uid.uidByte[0] == 192) && 
+(mfrc522.uid.uidByte[1] == 225) && (mfrc522.uid.uidByte[2] 
+== 121) && (mfrc522.uid.uidByte[3] == 163)) && (fflag == 
+1)) { 
+ Serial.println("User01"); //Enter User1 Name
+ Blynk.virtualWrite(V2, "harsh" ); //Enter User1 Name
+ // Control the servo 
+ rotateServo();
+ } else if (((mfrc522.uid.uidByte[0] == 99) && 
+(mfrc522.uid.uidByte[1] == 239) && (mfrc522.uid.uidByte[2] 
+== 174) && (mfrc522.uid.uidByte[3] == 167))&& (eflag == 
+1)) { 
+ Serial.println("User02"); //Enter User2 Name 
+ Blynk.virtualWrite(V2, "Mittal" ); //Enter User2 Name
+ // Control the servo 
+ rotateServo();
+ } else if (((mfrc522.uid.uidByte[0] == 21) && 
+(mfrc522.uid.uidByte[1] == 22) && (mfrc522.uid.uidByte[2] 
+== 23) && (mfrc522.uid.uidByte[3] == 24))&& (jflag == 1)) { 
+ Serial.println("User03"); //Enter User3 Name
+ Blynk.virtualWrite(V2, "mark" ); //Enter User3 Name
+ // Control the servo 
+ rotateServo();
+ } else { 
+ Serial.println("Unregistered User");
+ } 
+} 
+void rotateServo() { 
+ // Rotate the servo to a certain position 
+ servo.write(0); // Rotate to one direction
+ delay(1000); // Wait for 1 second
+ servo.write(90); // Return to the middle position
+ delay(1000); // Wait for 1 second
+} 
+// in Blynk app writes values to the Virtual Pin 3 
+BLYNK_WRITE(V3) { 
+ fflag = param.asInt(); // assigning incoming value from pin 
+V3 to a variable 
+} 
+// in Blynk app writes values to the Virtual Pin 4 
+BLYNK_WRITE(V4) { 
+ eflag = param.asInt(); // assigning incoming value from pin 
+V4 to a variable 
+} 
+BLYNK_WRITE(V5) { 
+ jflag = param.asInt(); // assigning incoming value from pin 
+V5 to a variable 
+}
